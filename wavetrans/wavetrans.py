@@ -17,7 +17,7 @@ def get_transmitted_spectrum(sp1file, tabfile, sp2file, closed=False, ix=0):
     s = swan.SwanIO()
     ix = dict(location=ix)
     spc = s.read_spc(sp1file)[ix]
-    spc.energy *= K
+    spc.energy *= K**2.
     spc = spc.to_directional(direction=np.arange(0., 360., 10.))
     s.write_spc(spc, sp2file)
 
