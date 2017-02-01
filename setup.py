@@ -15,7 +15,7 @@ setup(
     ],
     dependency_links = [
         'https://github.com/openearth/oceanwaves-python/archive/master.zip#egg=oceanwaves-0.0',
-    ]
+    ],
     entry_points={'console_scripts': [
         'wavetrans = wavetrans.console:wavetrans',
     ]},
