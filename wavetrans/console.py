@@ -8,17 +8,16 @@ def wavetrans():
     '''wavetrans : creates SWAN spectrum shoreward of barrier
 
     Usage:
-        wavetrans <sp1file_in> <tabfile> <sp1file_out> [--closed] [--ix=NUM] [--verbose=LEVEL]
+        wavetrans <spcfile> <outpath> [--closed] [--door=NUM] [--verbose=LEVEL]
 
     Positional arguments:
-        sp1file_in         SWAN spectrum file seaward of barrier
-        tabfile            SWAN tabular file seaward of barrier
-        sp1file_out        resulting SWAN spectrum file shoreward of barrier
+        spcfile            SWAN spectrum file seaward of barrier
+        outpath            resulting SWAN spectrum file shoreward of barrier
 
     Options:
         -h, --help         show this help message and exit
         --closed           assume barrier doors are closed
-        --ix=NUM            location index in SWAN files
+        --door=NUM         location index in SWAN files
         --verbose=LEVEL    write logging messages [default: 20]
 
     '''
@@ -28,7 +27,7 @@ def wavetrans():
     # initialize file logger
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)-15s %(name)-8s %(levelname)-8s %(message)s',
-                        filename='%s.log' % os.path.splitext(arguments['<sp1file_in>'])[0])
+                        filename='%s.log' % os.path.splitext(arguments['<spcfile>'])[0])
 
     # initialize console logger
     console = logging.StreamHandler()
@@ -37,16 +36,15 @@ def wavetrans():
     logging.getLogger('').addHandler(console)
 
     # run script
-    if arguments['--ix']:
-        ix = int(arguments['--ix'])
+    if arguments['--door']:
+        door = int(arguments['--door'])
     else:
-        ix = 0
+        door = None
         
-    get_transmitted_spectrum(arguments['<sp1file_in>'],
-                             arguments['<tabfile>'],
-                             arguments['<sp1file_out>'],
+    get_transmitted_spectrum(arguments['<spcfile>'],
+                             arguments['<outpath>'],
                              closed=arguments['--closed'],
-                             ix=ix)
+                             door=door)
 
     
 if __name__ == '__main__':

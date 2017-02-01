@@ -1,40 +1,64 @@
+import re
 import os
 import json
+import logging
 import numpy as np
 import oceanwaves
 
 
 GEOM_FILE = os.path.join(os.path.split(__file__)[0], 'dimensionsOSK.json')
+REGEX_RUN = 'U\d{2}D\d{3}L(m|p)\d{3}(OO|NZ)\w'
 
 
-def get_transmitted_spectrum(sp1file_in, tabfile, sp1file_out, closed=False, ix=0):
-    '''Reads SWAN spectrum and table file and writes transmitted SWAN spectrum file
+def get_transmitted_spectrum(spcfile, outpath, closed=False, door=None):
+    '''Reads SWAN spectrum and table file and writes transmitted SWAN spectrum files
 
     Parameters
     ----------
-    sp1file_in : str
+    spcfile : str
         Path to input SWAN spectrum file
-    tabfile : str
-        Path to input SWAN table file
-    sp1file_out : str
-        Path to output SWAN spectrum file
+    outpath : str
+        Path to output directory for SWAN spectrum files
     closed : bool, optional
         Flag indicating whether barrier doors are closed
-    ix : int, optional
+    door : int, optional
         Index of barrier door in dimensionsOSK.json
     
     '''
 
-    hbc = get_conditions(sp1file_in, tabfile, ix=ix)
-    geom = get_geometry()
-    K = transmission_through_barrier([hbc], geom, closed=closed)[0]['K']
+    # determine and check paths
+    if not os.path.exists(spcfile):
+        raise IOError('Spectrum file not found: %s' % spcfile)
 
-    # create spectrum
-    ix = dict(location=ix)
-    spc = oceanwaves.from_swan(sp1file_in)[ix]
-    spc.energy *= K**2.
-    #spc = spc.to_directional(direction=np.arange(0., 360., 10.))
-    spc.to_swan(sp1file_out)
+    tabfile = '%s.TAB' % os.path.splitext(spcfile)[0]
+
+    if not os.path.exists(tabfile):
+        raise IOError('Tabular file corresponding to spectrum fil not found: %s' % tabfile)
+
+    m = re.match(REGEX_RUN, os.path.split(spcfile)[1])
+    if not m:
+        raise ValueError('Invalid run identifier in file name: %s' % spcfile)
+
+    run = m.group().replace('NZ','OO')
+    outpath = os.path.join(outpath, run)
+    if not os.path.exists(outpath):
+        os.makedirs(outpath)
+    
+    # read conditions and geometry
+    hbc = get_conditions(spcfile, tabfile, door=door)
+    geom = get_geometry()
+
+    # compute transmission
+    Ks = transmission_through_barrier(hbc, geom, closed=closed)
+
+    # create spectra
+    spc = oceanwaves.from_swan(spcfile)
+    for i in range(spc.dims['location']):
+        outfile = os.path.join(outpath, '%s%s.SP2' % (run, geom[i]['name']))
+        
+        spc_i = spc[dict(location=i)]
+        spc_i['_energy'] *= Ks[i]**2.
+        spc_i.to_swan(outfile)
 
 
 def transmission_through_door(swl, Hs, rmb, beam, road, closed=False, **kwargs):
@@ -107,35 +131,33 @@ def transmission_through_barrier(hbc, geom, closed=False):
 
     '''
     
-    geom = dict(zip([(round(g['x']), round(g['y'])) for g in geom], geom))
-    hbc  = dict(zip([(round(h['x']), round(h['y'])) for h in hbc], hbc))
-                
     Kt = []
-    for (x_i, y_i), hbc_i in hbc.iteritems():
+    for i, (hbc_i, geom_i) in enumerate(zip(hbc, geom)):
                     
         kwargs = dict(closed=closed)
         kwargs.update(hbc_i)
-        kwargs.update(geom[(x_i, y_i)])
-        
-        Kt.append(dict(x=x_i,
-                       y=y_i,
-                       K=transmission_through_door(**kwargs)))
+        kwargs.update(geom_i)
+
+        Kt.append(transmission_through_door(**kwargs))
                     
     return Kt
 
 
-def get_conditions(sp1file, tabfile, ix=0):
+def get_conditions(sp1file, tabfile, door=None):
     '''Extract relevant conditions from input files'''
 
     # read swan data
     spc = oceanwaves.from_swan(sp1file)
     tab = oceanwaves.from_swantable(tabfile)
 
-    ix = dict(location=ix)
-    hbc = dict(Hs = float(spc.Hm0()[ix].values),
-               swl = float(tab[ix]['Watlev'].values),
-               x = float(tab[ix]['Xp'].values),
-               y = float(tab[ix]['Yp'].values))
+    hbc = dict(Hs = spc.Hm0().values,
+               swl = tab['Watlev'].values,
+               x = tab['Xp'].values,
+               y = tab['Yp'].values)
+
+    # reshape structure
+    hbc = [{k:v[i] for k, v in hbc.iteritems()}
+           for i in range(spc.dims['location'])]
 
     return hbc
         
