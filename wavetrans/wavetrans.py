@@ -45,19 +45,25 @@ def get_transmitted_spectrum(spcfile, outpath, closed=False, door=None):
         os.makedirs(outpath)
     
     # read conditions and geometry
-    hbc = get_conditions(spcfile, tabfile, door=door)
+    hbc = get_conditions(spcfile, tabfile)
     geom = get_geometry()
 
     # compute transmission
-    Ks = transmission_through_barrier(hbc, geom, closed=closed)
+    Kt = transmission_through_barrier(hbc, geom, closed=closed, door=door)
 
-    # create spectra
+    # read spectrum
     spc = oceanwaves.from_swan(spcfile)
-    for i in range(spc.dims['location']):
-        outfile = os.path.join(outpath, '%s%s.SP2' % (run, geom[i]['name']))
+    if door is not None:
+        doors = [door]
+    else:
+        doors = range(spc.dims['location'])
         
-        spc_i = spc[dict(location=i)]
-        spc_i['_energy'] *= Ks[i]**2.
+    # write spectra
+    for i, door in enumerate(doors):
+        outfile = os.path.join(outpath, '%s%s.SP2' % (run, geom[door]['name']))
+        
+        spc_i = spc[dict(location=door)]
+        spc_i['_energy'] *= Kt[i]**2.
         spc_i.to_swan(outfile)
 
 
@@ -112,7 +118,7 @@ def transmission_through_door(swl, Hs, rmb, beam, road, closed=False, **kwargs):
     return Kt
             
             
-def transmission_through_barrier(hbc, geom, closed=False):
+def transmission_through_barrier(hbc, geom, closed=False, door=None):
     '''Compute wave transmission through entire barrier
 
     Parameters
@@ -123,6 +129,8 @@ def transmission_through_barrier(hbc, geom, closed=False):
         Dictionary with barrier geometry (x, y, rmb, beam, road)
     closed : bool, optional
         Flag indicating whether barrier doors are closed
+    door : int, optional
+        Index of barrier door in dimensionsOSK.json (default: all)
 
     Returns
     -------
@@ -130,9 +138,13 @@ def transmission_through_barrier(hbc, geom, closed=False):
         List with wave transmitions coefficients
 
     '''
+
+    if door is not None:
+        hbc = [hbc[door]]
+        geom = [geom[door]]
     
     Kt = []
-    for i, (hbc_i, geom_i) in enumerate(zip(hbc, geom)):
+    for hbc_i, geom_i in zip(hbc, geom):
                     
         kwargs = dict(closed=closed)
         kwargs.update(hbc_i)
@@ -143,7 +155,7 @@ def transmission_through_barrier(hbc, geom, closed=False):
     return Kt
 
 
-def get_conditions(sp1file, tabfile, door=None):
+def get_conditions(sp1file, tabfile):
     '''Extract relevant conditions from input files'''
 
     # read swan data
