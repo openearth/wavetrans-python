@@ -1,25 +1,24 @@
 import os
 import json
 import numpy as np
-import oceanwaves.swan2 as swan
+import oceanwaves
 
 
 GEOM_FILE = os.path.join(os.path.split(__file__)[0], 'dimensionsOSK.json')
 
 
-def get_transmitted_spectrum(sp1file, tabfile, sp2file, closed=False, ix=0):
+def get_transmitted_spectrum(sp1file_in, tabfile, sp1file_out, closed=False, ix=0):
 
-    hbc = get_conditions(sp1file, tabfile, ix=ix)
+    hbc = get_conditions(sp1file_in, tabfile, ix=ix)
     geom = get_geometry()
     K = transmission_through_barrier([hbc], geom, closed=closed)[0]['K']
 
     # create spectrum
-    s = swan.SwanIO()
     ix = dict(location=ix)
-    spc = s.read_spc(sp1file)[ix]
+    spc = oceanwaves.from_swan(sp1file_in)[ix]
     spc.energy *= K**2.
-    spc = spc.to_directional(direction=np.arange(0., 360., 10.))
-    s.write_spc(spc, sp2file)
+    #spc = spc.to_directional(direction=np.arange(0., 360., 10.))
+    spc.to_swan(sp1file_out)
 
 
 def transmission_through_door(swl, Hs, rmb, beam, road, closed=False, **kwargs):
@@ -72,9 +71,8 @@ def transmission_through_barrier(hbc, geom, closed=False):
 def get_conditions(sp1file, tabfile, ix=0):
 
     # read swan data
-    s = swan.SwanIO()
-    spc = s.read_spc(sp1file)
-    tab = s.read_table(tabfile)
+    spc = oceanwaves.from_swan(sp1file)
+    tab = oceanwaves.from_swantable(tabfile)
 
     ix = dict(location=ix)
     hbc = dict(Hs = float(spc.Hm0()[ix].values),

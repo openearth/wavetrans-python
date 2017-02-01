@@ -8,12 +8,12 @@ def wavetrans():
     '''wavetrans : creates SWAN spectrum shoreward of barrier
 
     Usage:
-        wavetrans <sp1file> <tabfile> <sp2file> [--closed] [--ix=NUM] [--verbose=LEVEL]
+        wavetrans <sp1file_in> <tabfile> <sp1file_out> [--closed] [--ix=NUM] [--verbose=LEVEL]
 
     Positional arguments:
-        sp1file            SWAN spectrum file seaward of barrier
+        sp1file_in         SWAN spectrum file seaward of barrier
         tabfile            SWAN tabular file seaward of barrier
-        sp2file            resulting SWAN spectrum file shoreward of barrier
+        sp1file_out        resulting SWAN spectrum file shoreward of barrier
 
     Options:
         -h, --help         show this help message and exit
@@ -28,7 +28,7 @@ def wavetrans():
     # initialize file logger
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)-15s %(name)-8s %(levelname)-8s %(message)s',
-                        filename='%s.log' % os.path.splitext(arguments['<sp1file>'])[0])
+                        filename='%s.log' % os.path.splitext(arguments['<sp1file_in>'])[0])
 
     # initialize console logger
     console = logging.StreamHandler()
@@ -42,9 +42,9 @@ def wavetrans():
     else:
         ix = 0
         
-    get_transmitted_spectrum(arguments['<sp1file>'],
+    get_transmitted_spectrum(arguments['<sp1file_in>'],
                              arguments['<tabfile>'],
-                             arguments['<sp2file>'],
+                             arguments['<sp1file_out>'],
                              closed=arguments['--closed'],
                              ix=ix)
 
