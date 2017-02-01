@@ -8,6 +8,22 @@ GEOM_FILE = os.path.join(os.path.split(__file__)[0], 'dimensionsOSK.json')
 
 
 def get_transmitted_spectrum(sp1file_in, tabfile, sp1file_out, closed=False, ix=0):
+    '''Reads SWAN spectrum and table file and writes transmitted SWAN spectrum file
+
+    Parameters
+    ----------
+    sp1file_in : str
+        Path to input SWAN spectrum file
+    tabfile : str
+        Path to input SWAN table file
+    sp1file_out : str
+        Path to output SWAN spectrum file
+    closed : bool, optional
+        Flag indicating whether barrier doors are closed
+    ix : int, optional
+        Index of barrier door in dimensionsOSK.json
+    
+    '''
 
     hbc = get_conditions(sp1file_in, tabfile, ix=ix)
     geom = get_geometry()
@@ -22,6 +38,29 @@ def get_transmitted_spectrum(sp1file_in, tabfile, sp1file_out, closed=False, ix=
 
 
 def transmission_through_door(swl, Hs, rmb, beam, road, closed=False, **kwargs):
+    '''Compute wave transmission through single barrier door
+
+    Parameters
+    ----------
+    swl : float
+        Still water level
+    Hs : float
+        Significant wave height
+    rmb : float
+        Height of rubble mound breakwater
+    beam : float
+        Height of beam
+    road : float
+        Height of road
+    closed : bool, optional
+        Flag indicating whether barrier door is closed
+
+    Returns
+    -------
+    Kt : float
+        Wave transmission coefficient
+
+    '''
 
     # water column includes 1/2 of the Hs
     crest = swl + Hs / 2.
@@ -50,7 +89,24 @@ def transmission_through_door(swl, Hs, rmb, beam, road, closed=False, **kwargs):
             
             
 def transmission_through_barrier(hbc, geom, closed=False):
-                
+    '''Compute wave transmission through entire barrier
+
+    Parameters
+    ----------
+    hbc : dict
+        Dictionary with hydraulic boundary conditions (x, y, swl, Hs)
+    geom : dict
+        Dictionary with barrier geometry (x, y, rmb, beam, road)
+    closed : bool, optional
+        Flag indicating whether barrier doors are closed
+
+    Returns
+    -------
+    Kt : list
+        List with wave transmitions coefficients
+
+    '''
+    
     geom = dict(zip([(round(g['x']), round(g['y'])) for g in geom], geom))
     hbc  = dict(zip([(round(h['x']), round(h['y'])) for h in hbc], hbc))
                 
@@ -69,6 +125,7 @@ def transmission_through_barrier(hbc, geom, closed=False):
 
 
 def get_conditions(sp1file, tabfile, ix=0):
+    '''Extract relevant conditions from input files'''
 
     # read swan data
     spc = oceanwaves.from_swan(sp1file)
