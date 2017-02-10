@@ -155,11 +155,11 @@ def transmission_through_barrier(hbc, geom, closed=False, door=None):
     return Kt
 
 
-def get_conditions(sp1file, tabfile):
+def get_conditions(spcfile, tabfile):
     '''Extract relevant conditions from input files'''
 
     # read swan data
-    spc = oceanwaves.from_swan(sp1file)
+    spc = oceanwaves.from_swan(spcfile)
     tab = oceanwaves.from_swantable(tabfile)
 
     hbc = dict(Hs = spc.Hm0().values,
