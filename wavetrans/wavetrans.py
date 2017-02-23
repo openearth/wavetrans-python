@@ -39,7 +39,10 @@ def get_transmitted_spectrum(spcfile, outpath, closed=False, door=None):
     if not m:
         raise ValueError('Invalid run identifier in file name: %s' % spcfile)
 
-    run = m.group().replace('NZ','OO')
+    if closed:
+        run = m.group().replace('NZ','OD')
+    else:
+        run = m.group().replace('NZ','OO')
     outpath = os.path.join(outpath, run)
     if not os.path.exists(outpath):
         os.makedirs(outpath)
